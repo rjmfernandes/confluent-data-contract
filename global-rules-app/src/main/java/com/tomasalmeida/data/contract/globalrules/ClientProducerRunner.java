@@ -38,7 +38,7 @@ public class ClientProducerRunner {
         try {
             LOGGER.info(">>> CLIENT CREATION <<<");
             // valid client id and country code
-            produceClient("u-12345", "Jane", "Doe", "uk");
+            produceClient("u-12345", "Alice", "Smith", "PT");
             produceClient("u-a1b2c", "John", "Doe", "UK");
             //invalid client id
             produceClient("12345", "Pierre", "Dupont", "fr");
@@ -68,10 +68,10 @@ public class ClientProducerRunner {
             //valid order
             produceOrder(1, "u-12345", "FOO-123456", 2);
             produceOrder(2, "u-a1b2c", "BAR-123456", 1);
-            //invalid user id
+            //invalid client id
             produceOrder(3, "12345", "FOO-123456", 2);
             produceOrder(4, "abcde", "BAR-123456", 1);
-            //invalid product id
+            //invalid product id but will pass cause it's inside products
             produceOrder(5, "u-12345", "123456", 2);
             produceOrder(6, "u-a1b2c", "BAR", 1);
             orderKafkaProducer.close();
