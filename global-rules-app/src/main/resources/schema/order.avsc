@@ -8,7 +8,7 @@
       "type": "int"
     },
     {
-      "name": "clientId",
+      "name": "userId",
       "type": "string",
       "confluent:tags": [ "CLIENTID"]
     },

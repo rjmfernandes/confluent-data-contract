@@ -296,7 +296,10 @@ This step needs to be done before creating the schemas
 ```
 
 **NOTES:**
-* The overrideRuleSet overrides value for the ruleSet to be used during schema registration
+* The overrideRuleSet, defaultRuleSet and the rules a schema have an order of precedence defined in [Configuration enhancements](https://docs.confluent.io/platform/7.6/schema-registry/fundamentals/data-contracts.html#configuration-enhancements).
+1. first, taking the default value
+2. then, merging the metadata from the schema on top of it
+3. finally, merging the override value for the final result
 * Created schemas are not affected by the overrideRuleSet, only the new ones.
 
 ### Register / update  plain vanilla schemas
@@ -323,9 +326,9 @@ java -classpath target/global-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 **NOTES:**
-* ClientIdValidation rule is applied to field clientId (at the root) which has the tag `CLIENTID`
-* ProductIdValidation rule is applied to field productId (at the root) which has the tag `PRODUCTID`
-* CountryValidation rule is applied to any field named `countryCode` (at the root)
+* ClientIdValidation rule is applied to any field which has the tag `CLIENTID`
+* ProductIdValidation rule is applied to any field which has the tag `PRODUCTID`
+* CountryValidation rule is applied to any field named `countryCode`
 * Product, client and order events are produced and as the rules are copied to the schemas, they are executed during the production.
 
 Finally, let's check the DLQ topics. Note that CountryCode rule does not send data to a DLQ topic, but the ClientIdValidation and ProductIdValidation rules do.
@@ -362,7 +365,7 @@ Finally, let's check the DLQ topics. Note that CountryCode rule does not send da
 2. Stop the environment
 
 ```shell
-    cd env
+    cd ../env
     docker compose down -v
     cd ..
 ```

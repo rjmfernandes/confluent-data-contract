@@ -5,7 +5,7 @@
   "doc": "Client data",
   "fields": [
     {
-      "name": "clientId",
+      "name": "id",
       "type": "string",
       "confluent:tags": [ "CLIENTID"]
     },

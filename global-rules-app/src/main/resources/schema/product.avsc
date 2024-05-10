@@ -4,7 +4,7 @@
   "type": "record",
   "fields": [
     {
-      "name": "productId",
+      "name": "id",
       "type": "string",
       "confluent:tags": [ "PRODUCTID"]
     },

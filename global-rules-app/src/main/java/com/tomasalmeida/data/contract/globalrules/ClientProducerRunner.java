@@ -71,7 +71,7 @@ public class ClientProducerRunner {
             //invalid client id
             produceOrder(3, "12345", "FOO-123456", 2);
             produceOrder(4, "abcde", "BAR-123456", 1);
-            //invalid product id but will pass cause it's inside products
+            //invalid product id
             produceOrder(5, "u-12345", "123456", 2);
             produceOrder(6, "u-a1b2c", "BAR", 1);
             orderKafkaProducer.close();
