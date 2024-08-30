@@ -14,11 +14,10 @@ Have the following tools installed:
 ## Start the environment and compile the code
 
 ```shell
-    cd env
-    docker compose up -d
-    cd ..
-    # compile the project and move to the app folder
-    mvn clean package
+cd env
+docker compose up -d
+cd ..
+mvn clean package
 ```
 
 Control center is available under http://localhost:9021
@@ -28,24 +27,23 @@ Control center is available under http://localhost:9021
 Creating the needed topics:
 
 ```shell
-  # create topics
-  cd env/
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic crm.users
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic crm.contracts 
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic crm.generic-dlq
-  cd ..
-  cd readwrite-rules-app
+cd env/
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic crm.users
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic crm.contracts 
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic crm.generic-dlq
+cd ..
+cd readwrite-rules-app
 ```
 
 ### Register plain vanilla schemas
 
 ```shell
-  # user subject
-  jq -n --rawfile schema src/main/resources/schema/user.avsc '{schema: $schema}' | \
-  curl --silent http://localhost:8081/subjects/crm.users-value/versions --json @- | jq
-  # contract subject
-  jq -n --rawfile schema src/main/resources/schema/contract.avsc '{schema: $schema}' | \
-  curl --silent http://localhost:8081/subjects/crm.contracts-value/versions --json @- | jq
+# user subject
+jq -n --rawfile schema src/main/resources/schema/user.avsc '{schema: $schema}' | \
+curl --silent http://localhost:8081/subjects/crm.users-value/versions --json @- | jq
+# contract subject
+jq -n --rawfile schema src/main/resources/schema/contract.avsc '{schema: $schema}' | \
+curl --silent http://localhost:8081/subjects/crm.contracts-value/versions --json @- | jq
 ```
 **NOTES:**
 * We have created two schemas, one for users and one for contracts. 
@@ -54,14 +52,14 @@ Creating the needed topics:
 ### Enhancing the data contract with metadata
 
 ```shell
-    # user metadata
-    curl -s http://localhost:8081/subjects/crm.users-value/versions \
-      --header "Content-Type: application/json" --header "Accept: application/json" \
-      --data "@src/main/resources/schema/user-metadata.json" | jq
-    # contract metadata
-    curl -s http://localhost:8081/subjects/crm.contracts-value/versions \
-      --header "Content-Type: application/json" --header "Accept: application/json" \
-      --data "@src/main/resources/schema/contract-metadata.json" | jq
+# user metadata
+curl -s http://localhost:8081/subjects/crm.users-value/versions \
+  --header "Content-Type: application/json" --header "Accept: application/json" \
+  --data "@src/main/resources/schema/user-metadata.json" | jq
+# contract metadata
+curl -s http://localhost:8081/subjects/crm.contracts-value/versions \
+  --header "Content-Type: application/json" --header "Accept: application/json" \
+  --data "@src/main/resources/schema/contract-metadata.json" | jq
 ```
 
 **NOTES:**
@@ -72,14 +70,14 @@ Creating the needed topics:
 ### Adding data quality rules to the data contract
 
 ```shell
-    # users rules
-    curl http://localhost:8081/subjects/crm.users-value/versions \
-      --header "Content-Type: application/json" --header "Accept: application/json" \
-      --data @src/main/resources/schema/user-ruleset.json | jq
-    # contracts rules
-    curl http://localhost:8081/subjects/crm.contracts-value/versions \
-      --header "Content-Type: application/json" --header "Accept: application/json" \
-      --data @src/main/resources/schema/contract-ruleset.json | jq
+# users rules
+curl http://localhost:8081/subjects/crm.users-value/versions \
+  --header "Content-Type: application/json" --header "Accept: application/json" \
+  --data @src/main/resources/schema/user-ruleset.json | jq
+# contracts rules
+curl http://localhost:8081/subjects/crm.contracts-value/versions \
+  --header "Content-Type: application/json" --header "Accept: application/json" \
+  --data @src/main/resources/schema/contract-ruleset.json | jq
 ```
 
 **NOTES:**
@@ -88,12 +86,18 @@ Creating the needed topics:
 * The contract schema has a rule that the contract must have a valid date.
 * As before, the id is increased by one, indicating a new version of the subject.
 
+We can check:
+
+```shell
+curl -s http://localhost:8081/subjects/crm.users-value/versions/latest | jq
+```
+
 ### Run producer 
 
 Check events being created or refused due to the condition rules.
 
 ```shell
-  java -classpath target/readwrite-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.readwrite.ProducerRunner 
+java -classpath target/readwrite-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.readwrite.ProducerRunner 
 ```
 **NOTES:**
 * Check the logs to see the events being produced and the ones that were not accepted by the rules.
@@ -105,7 +109,7 @@ Check events being created or refused due to the condition rules.
 Check events being consumed and transformed during consumption.
 
 ```shell
-  java -classpath target/readwrite-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.readwrite.ConsumerRunner
+java -classpath target/readwrite-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.readwrite.ConsumerRunner
 ```
 
 **NOTES:**
@@ -116,7 +120,7 @@ Check events being consumed and transformed during consumption.
 Check the DLQ topic to see the events that were not accepted by the rules and their headers.
 
 ```shell
-  kafka-console-consumer --bootstrap-server localhost:29092 \
+kafka-console-consumer --bootstrap-server localhost:9092 \
     --property schema.registry.url=http://localhost:8081 \
     --property print.timestamp=false \
     --property print.offset=false \
@@ -139,20 +143,20 @@ Check the DLQ topic to see the events that were not accepted by the rules and th
 Create the resources
 
 ```shell
-    cd ../env
-    docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic warehouse.products
-    cd ..
+cd ../env
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic warehouse.products
+cd ..
 ```
 
 ### Register the v1 and v2 schemas
 
 ```shell
-  # register v1 product
-  jq -n --rawfile schema  migration-app-v1/src/main/resources/schema/product.avsc '{schema: $schema, metadata: { properties: { app_version: 1 }}}' | \
-  curl --silent http://localhost:8081/subjects/warehouse.products-value/versions --json @- | jq
-  # register v2 product
-  jq -n --rawfile schema  migration-app-v2/src/main/resources/schema/product.avsc '{schema: $schema, metadata: { properties: { app_version: 2 }}}' | \
-  curl --silent http://localhost:8081/subjects/warehouse.products-value/versions --json @- | jq
+# register v1 product
+jq -n --rawfile schema  migration-app-v1/src/main/resources/schema/product.avsc '{schema: $schema, metadata: { properties: { app_version: 1 }}}' | \
+curl --silent http://localhost:8081/subjects/warehouse.products-value/versions --json @- | jq
+# register v2 product
+jq -n --rawfile schema  migration-app-v2/src/main/resources/schema/product.avsc '{schema: $schema, metadata: { properties: { app_version: 2 }}}' | \
+curl --silent http://localhost:8081/subjects/warehouse.products-value/versions --json @- | jq
 ```
 
 **NOTES:**
@@ -177,9 +181,9 @@ curl http://localhost:8081/config/warehouse.products-value \
 We try again
 
 ```shell
-  # register v2 product
-  jq -n --rawfile schema  migration-app-v2/src/main/resources/schema/product.avsc '{schema: $schema, metadata: { properties: { app_version: 2 }}}' | \
-  curl --silent http://localhost:8081/subjects/warehouse.products-value/versions --json @- | jq
+# register v2 product
+jq -n --rawfile schema  migration-app-v2/src/main/resources/schema/product.avsc '{schema: $schema, metadata: { properties: { app_version: 2 }}}' | \
+curl --silent http://localhost:8081/subjects/warehouse.products-value/versions --json @- | jq
 ```
 
 It should work now and we have a new schema version.
@@ -187,7 +191,7 @@ It should work now and we have a new schema version.
 ### Register the rules
 
 ```shell
-  curl http://localhost:8081/subjects/warehouse.products-value/versions \
+curl http://localhost:8081/subjects/warehouse.products-value/versions \
     --json @migration-app-v2/src/main/resources/schema/product-migration-rules.json | jq
 ```
 
@@ -196,27 +200,27 @@ It should work now and we have a new schema version.
 There is an important point, we need to indicate the app_version in our producer, so we need to add the lines
 
 ```java
-  // indicates the app_version=1
-  properties.put(KafkaAvroDeserializerConfig.USE_LATEST_WITH_METADATA, "app_version=1");
-  productProducerV1 = new KafkaProducer<>(properties);
-  
-  // indicates the app_version=2
-  properties.put(KafkaAvroDeserializerConfig.USE_LATEST_WITH_METADATA, "app_version=2");
-  productProducerV2 = new KafkaProducer<>(properties);
+// indicates the app_version=1
+properties.put(KafkaAvroDeserializerConfig.USE_LATEST_WITH_METADATA, "app_version=1");
+productProducerV1 = new KafkaProducer<>(properties);
+
+// indicates the app_version=2
+properties.put(KafkaAvroDeserializerConfig.USE_LATEST_WITH_METADATA, "app_version=2");
+productProducerV2 = new KafkaProducer<>(properties);
 ```
 
 **Running producer v1 (exclusive shell)**
 
 ```shell
-  cd migration-app-v1
-  java -classpath target/migration-app-v1-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ProducerRunner
+cd migration-app-v1
+java -classpath target/migration-app-v1-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ProducerRunner
 ```
 
 **Running producer v2 (exclusive shell)**
 
 ```shell
-  cd migration-app-v2
-  java -classpath target/migration-app-v2-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ProducerRunner
+cd migration-app-v2
+java -classpath target/migration-app-v2-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ProducerRunner
 ```
 
 **What is happening now?**
@@ -234,8 +238,8 @@ There is an important point, we need to indicate the app_version in our producer
 **Running consumer v1 (exclusive shell)**
 
 ```shell
-  cd migration-app-v1
-  java -classpath target/migration-app-v1-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ConsumerRunner
+cd migration-app-v1
+java -classpath target/migration-app-v1-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ConsumerRunner
 ```
 
 **NOTES:**
@@ -244,8 +248,8 @@ There is an important point, we need to indicate the app_version in our producer
 **Running consumer v2 (exclusive shell)**
 
 ```shell
-  cd migration-app-v2
-  java -classpath target/migration-app-v2-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ConsumerRunner
+cd migration-app-v2
+java -classpath target/migration-app-v2-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.migration.ConsumerRunner
 ```
 
 **NOTES:**
@@ -256,15 +260,15 @@ There is an important point, we need to indicate the app_version in our producer
 Creating the needed topics and compiling the project
 
 ```shell
-  # create topics
-  cd env/
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic data.clients
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic data.orders 
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic data.products
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic data.dlq.invalid.clients
-  docker compose exec broker1 kafka-topics --bootstrap-server broker1:9092 --create --topic data.dlq.invalid.products
-  cd ..
-  cd global-rules-app
+# create topics
+cd env/
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic data.clients
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic data.orders 
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic data.products
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic data.dlq.invalid.clients
+docker compose exec broker kafka-topics --bootstrap-server broker:9092 --create --topic data.dlq.invalid.products
+cd ..
+cd global-rules-app
 ```
 
 ### Enhancing the schemas with the global rule defaultRuleset
@@ -272,7 +276,7 @@ Creating the needed topics and compiling the project
 This step needs to be done before creating the schemas
 
 ```shell
-  curl -s http://localhost:8081/config \
+curl -s http://localhost:8081/config \
   -X PUT \
   --header "Content-Type: application/json" \
   --data @src/main/resources/schema/global-ruleset_v1.json | jq
@@ -281,15 +285,14 @@ This step needs to be done before creating the schemas
 ### Register 1 plain vanilla schemas
 
 ```shell
-  # client subject
-  jq -n --rawfile schema src/main/resources/schema/client.avsc '{schema: $schema}' | \
-  curl --silent http://localhost:8081/subjects/data.clients-value/versions --json @- | jq
+jq -n --rawfile schema src/main/resources/schema/client.avsc '{schema: $schema}' | \
+curl --silent http://localhost:8081/subjects/data.clients-value/versions --json @- | jq
 ```  
 
 ### Update rules with overrideRuleSet
 
 ```shell
-  curl -s http://localhost:8081/config \
+curl -s http://localhost:8081/config \
   -X PUT \
   --header "Content-Type: application/json" \
   --data @src/main/resources/schema/global-ruleset_v2.json | jq
@@ -305,15 +308,15 @@ This step needs to be done before creating the schemas
 ### Register / update  plain vanilla schemas
 
 ```shell
-  # client subject
-  jq -n --rawfile schema src/main/resources/schema/client.avsc '{schema: $schema}' | \
-  curl --silent http://localhost:8081/subjects/data.clients-value/versions --json @- | jq
-  # orders subject
-  jq -n --rawfile schema src/main/resources/schema/order.avsc '{schema: $schema}' | \
-  curl --silent http://localhost:8081/subjects/data.orders-value/versions --json @- | jq
-  # products subject
-  jq -n --rawfile schema src/main/resources/schema/product.avsc '{schema: $schema}' | \
-  curl --silent http://localhost:8081/subjects/data.products-value/versions --json @- | jq
+# client subject
+jq -n --rawfile schema src/main/resources/schema/client.avsc '{schema: $schema}' | \
+curl --silent http://localhost:8081/subjects/data.clients-value/versions --json @- | jq
+# orders subject
+jq -n --rawfile schema src/main/resources/schema/order.avsc '{schema: $schema}' | \
+curl --silent http://localhost:8081/subjects/data.orders-value/versions --json @- | jq
+# products subject
+jq -n --rawfile schema src/main/resources/schema/product.avsc '{schema: $schema}' | \
+curl --silent http://localhost:8081/subjects/data.products-value/versions --json @- | jq
 ```
 
 All the schemas are registered with the defaultRuleSet and overrideRuleSet.
@@ -321,7 +324,6 @@ All the schemas are registered with the defaultRuleSet and overrideRuleSet.
 ### Testing the rules
 
 ```shell
-## run Client producer
 java -classpath target/global-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.tomasalmeida.data.contract.globalrules.ClientProducerRunner
 ```
 
@@ -334,7 +336,20 @@ java -classpath target/global-rules-app-1.0.0-SNAPSHOT-jar-with-dependencies.jar
 Finally, let's check the DLQ topics. Note that CountryCode rule does not send data to a DLQ topic, but the ClientIdValidation and ProductIdValidation rules do.
 
 ```shell
-  kafka-console-consumer --bootstrap-server localhost:29092 \
+kafka-console-consumer --bootstrap-server localhost:9092 \
+  --property schema.registry.url=http://localhost:8081 \
+  --property print.timestamp=false \
+  --property print.offset=false \
+  --property print.partition=false \
+  --property print.headers=true \
+  --property print.key=true \
+  --property print.value=true \
+  --topic data.dlq.invalid.clients \
+  --from-beginning
+```
+
+```shell
+kafka-console-consumer --bootstrap-server localhost:9092 \
     --property schema.registry.url=http://localhost:8081 \
     --property print.timestamp=false \
     --property print.offset=false \
@@ -342,21 +357,8 @@ Finally, let's check the DLQ topics. Note that CountryCode rule does not send da
     --property print.headers=true \
     --property print.key=true \
     --property print.value=true \
-    --topic data.dlq.invalid.clients \
+    --topic data.dlq.invalid.products \
     --from-beginning
-```
-
-```shell
-  kafka-console-consumer --bootstrap-server localhost:29092 \
-      --property schema.registry.url=http://localhost:8081 \
-      --property print.timestamp=false \
-      --property print.offset=false \
-      --property print.partition=false \
-      --property print.headers=true \
-      --property print.key=true \
-      --property print.value=true \
-      --topic data.dlq.invalid.products \
-      --from-beginning
 ```
 
 ## Shutdown
@@ -365,9 +367,9 @@ Finally, let's check the DLQ topics. Note that CountryCode rule does not send da
 2. Stop the environment
 
 ```shell
-    cd ../env
-    docker compose down -v
-    cd ..
+cd ../env
+docker compose down -v
+cd ..
 ```
 
 References:

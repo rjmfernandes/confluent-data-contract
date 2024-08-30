@@ -68,7 +68,7 @@ public class ProducerRunner {
             LOGGER.error("Unable to serialize user: {}", serializationException.getCause().getMessage());
         }
         LOGGER.info("================");
-        Thread.sleep(1000);
+        Thread.sleep(100);
 
     }
 
@@ -82,7 +82,7 @@ public class ProducerRunner {
             LOGGER.error("Unable to serialize contract: {}", serializationException.getCause().getMessage());
         }
         LOGGER.info("================");
-        Thread.sleep(1000);
+        Thread.sleep(100);
 
     }
 
